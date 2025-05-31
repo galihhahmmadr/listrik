@@ -1,45 +1,89 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Dashboard NESAS</title>
-  <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+  <title>NESAS - Dashboard</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: sans-serif;
+      display: flex;
+      height: 100vh;
+    }
+    .sidebar {
+      width: 200px;
+      background-color: orange;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+    }
+    .sidebar button {
+      background: none;
+      border: none;
+      color: white;
+      font-size: 18px;
+      padding: 10px 0;
+      cursor: pointer;
+      text-align: left;
+    }
+    .content {
+      flex: 1;
+      padding: 30px;
+    }
+    .hidden {
+      display: none;
+    }
+    .logout {
+      margin-top: 30px;
+      color: red;
+      cursor: pointer;
+    }
+  </style>
 </head>
 <body>
-  <h2>Kontrol Lampu Jarak Jauh</h2>
-  <p>Status Lampu: <span id="status">--</span></p>
-  <button onclick="kirimPerintah('1')">Nyalakan</button>
-  <button onclick="kirimPerintah('0')">Matikan</button>
-  <p><a href="#" onclick="logout()">Logout</a></p>
+
+  <div class="sidebar">
+    <button onclick="showPage('home')">🏠 Home</button>
+    <button onclick="showPage('profile')">👤 Profile</button>
+    <div class="logout" onclick="logout()">🚪 Logout</div>
+  </div>
+
+  <div class="content">
+    <div id="home">
+      <h2>Kendali Lampu</h2>
+      <button onclick="toggleLampu()">Lampu: <span id="lampuStatus">OFF</span></button>
+    </div>
+
+    <div id="profile" class="hidden">
+      <h2>Profil Pengguna</h2>
+      <p><strong>Nama:</strong> <span id="namaPengguna"></span></p>
+      <p><strong>Email:</strong> <span id="emailPengguna"></span></p>
+    </div>
+  </div>
 
   <script>
-    if (localStorage.getItem("login") !== "true") {
-      window.location.href = "index.html";
-    }
-
-    const topicKontrol = "galih/iot/lampu";
-    const topicStatus = "galih/iot/status";
-
-    const client = mqtt.connect("wss://broker.hivemq.com:8884/mqtt");
-
-    client.on("connect", function () {
-      console.log("Terhubung ke broker MQTT");
-      client.subscribe(topicStatus);
-    });
-
-    client.on("message", function (topic, message) {
-      if (topic === topicStatus) {
-        document.getElementById("status").innerText = message.toString() === "1" ? "MENYALA" : "MATI";
-      }
-    });
-
-    function kirimPerintah(nilai) {
-      client.publish(topicKontrol, nilai);
+    function showPage(page) {
+      document.getElementById("home").classList.add("hidden");
+      document.getElementById("profile").classList.add("hidden");
+      document.getElementById(page).classList.remove("hidden");
     }
 
     function logout() {
-      localStorage.setItem("login", "false");
+      localStorage.clear();
       window.location.href = "index.html";
     }
+
+    function toggleLampu() {
+      const status = document.getElementById("lampuStatus");
+      const state = status.innerText === "OFF" ? "ON" : "OFF";
+      status.innerText = state;
+
+      // Bisa dikirim ke ESP32 jika perlu
+      fetch(`/lampu?state=${state}`);
+    }
+
+    // Tampilkan nama & email
+    document.getElementById("namaPengguna").innerText = localStorage.getItem("user_name") || "Tidak diketahui";
+    document.getElementById("emailPengguna").innerText = localStorage.getItem("user_email") || "Tidak diketahui";
   </script>
 </body>
 </html>
